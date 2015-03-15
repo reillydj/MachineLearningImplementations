@@ -6,7 +6,7 @@ from sklearn.datasets import load_iris
 
 class logistic_regression():
 
-    def __init__(self, regularization=None, gradient_descent=None, threshold=0.5):
+    def __init__(self, regularization="l2", gradient_descent="stochastic", threshold=0.5):
 
         self.regularization = regularization
         self.gradient_descent = gradient_descent
@@ -20,9 +20,15 @@ class logistic_regression():
 
         assert not np.any(np.isnan(train_data)), "Dataset contains Null Values"
 
+        ## Initialize Coefficients
         self.coefficients = np.random.rand(train_data.shape[1] + 1)
+
+        ## Add Column of ones for Bias term
         train_data = np.c_[np.ones(len(train_data)), train_data]
-        self.stochastic_gradient_descent(train_data, labels, 0.005, 1.0)
+
+        if self.gradient_descent == "stochastic":
+            ## Use stochastic gradient descent to fit parameters
+            self.stochastic_gradient_descent(train_data, labels, 0.005, 1.0)
 
 
     def predict(self, test_data, threshold=0.5):
