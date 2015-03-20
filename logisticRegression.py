@@ -6,11 +6,13 @@ from sklearn.datasets import load_iris
 
 class logistic_regression():
 
-    def __init__(self, regularization="l2", gradient_descent="stochastic", threshold=0.5):
+    def __init__(self, regularization="l2", gradient_descent="stochastic"):
+
+        assert regularization in ("l2", "l1"), "Invalid Regularization Parameter"
+        assert gradient_descent in ("stochastic", "batch"), "Invalid Gradient Descent Parameter"
 
         self.regularization = regularization
         self.gradient_descent = gradient_descent
-        self.threshold = threshold
         self.type = "LogisticRegression"
         self.coefficients = np.zeros(1)
         self.p_values = None
@@ -26,6 +28,9 @@ class logistic_regression():
         ## Add Column of ones for Bias term
         train_data = np.c_[np.ones(len(train_data)), train_data]
 
+        ## Scale data to mean 0
+        self.scale_data(train_data)
+
         if self.gradient_descent == "stochastic":
             ## Use stochastic gradient descent to fit parameters
             self.stochastic_gradient_descent(train_data, labels, 0.005, 1.0)
@@ -33,35 +38,55 @@ class logistic_regression():
 
     def predict(self, test_data, threshold=0.5):
 
+        assert 0 <= threshold <= 1, "Invalid Threshold Parameter"
+
+        ## Scale data to mean 0
+        self.scale_data(test_data)
+
+        ## Calculate Binary Predictions
         probabilities = self.logit_link_function(np.dot(np.c_[np.ones(len(test_data)), test_data], self.coefficients))
         probabilities[probabilities > threshold] = 1
         probabilities[probabilities < threshold] = 0
+
         return list(probabilities)
 
     def predict_proba(self, test_data):
 
+        ## Calculate Predicted Probabilities
         return self.logit_link_function(np.dot(np.c_[np.ones(len(test_data)), test_data], self.coefficients))
 
     def logit_link_function(self, x):
 
         return 1.0 / (1.0 + np.exp(-x))
 
+    def scale_data(self, train_data):
+
+        [m, n] = train_data.shape
+
+        for i in range(n):
+            train_data[:, i] = train_data[:, i] - np.mean(train_data[:, i])
+
     def stochastic_gradient_descent(self, train_data, labels, learning_rate, c):
 
+        ## Initialize array of precisions
         precision = np.empty(train_data.shape[1])
         precision.fill(0.000001)
         while True:
 
+            ## Copy current coefficients
             next_coefficients = np.copy(self.coefficients)
+
             for i, label in enumerate(labels):
+
+                ## Perform L2 regularized coefficient update
                 next_coefficients += learning_rate * self.stochastic_update(train_data[i, :], label, next_coefficients)\
                                      - learning_rate * 1.0 / c * next_coefficients
                 self.iterations_to_convergence += 1
-                if all(abs(next_coefficients - self.coefficients) < precision):
-                    break
 
+            ## Check if coefficients have stabilized
             if all(abs(next_coefficients - self.coefficients) < precision):
                 break
+
             self.coefficients = next_coefficients
 
     def stochastic_update(self, row, label, coefficients):
