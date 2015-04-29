@@ -70,7 +70,7 @@ class logistic_regression():
 
         ## Initialize array of precisions
         precision = np.empty(train_data.shape[1])
-        precision.fill(0.000001)
+        precision.fill(0.00001)
         while True:
 
             ## Copy current coefficients
